@@ -1,23 +1,14 @@
 "use strict";
-/**
- * @module git/preCommitHook
- * Git pre-commit hook template and installer logic.
- *
- * Note: The primary installer command is in commands/installGitHook.ts.
- * This module provides the hook script template and a utility for
- * programmatic use (e.g. from tests or CI integration).
- */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HOOK_TEMPLATE = void 0;
 exports.installPreCommitHook = installPreCommitHook;
 const fs = require("fs");
 const path = require("path");
-/** The pre-commit hook shell script. */
 exports.HOOK_TEMPLATE = `#!/bin/sh
-# ── Antigravity Pre-Commit Hook ──
+# ── Hatai Pre-Commit Hook ──
 # Scans staged files for secrets before allowing the commit.
 
-echo "🔒 Antigravity: Scanning staged files for secrets..."
+echo "🔒 Hatai: Scanning staged files for secrets..."
 
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 
@@ -51,23 +42,15 @@ done
 
 if [ $SECRETS_FOUND -gt 0 ]; then
     echo ""
-    echo "❌ Antigravity: $SECRETS_FOUND file(s) contain potential secrets."
+    echo "❌ Hatai: $SECRETS_FOUND file(s) contain potential secrets."
     echo "   Please redact them before committing."
     echo "   To bypass: git commit --no-verify"
     exit 1
 fi
 
-echo "✅ Antigravity: No secrets detected. Commit allowed."
+echo "✅ Hatai: No secrets detected. Commit allowed."
 exit 0
 `;
-/**
- * Install the Antigravity pre-commit hook into a git repository.
- *
- * @param repoRoot - Absolute path to the repository root (must contain `.git`).
- * @param force    - If true, overwrite an existing hook.
- * @returns `true` if the hook was written successfully.
- * @throws If `.git` doesn't exist or the write fails.
- */
 function installPreCommitHook(repoRoot, force = false) {
     const hooksDir = path.join(repoRoot, '.git', 'hooks');
     const hookPath = path.join(hooksDir, 'pre-commit');

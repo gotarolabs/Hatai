@@ -1,18 +1,10 @@
 "use strict";
-/**
- * @module editor/diagnostics
- * VS Code Problems panel integration for detected secrets.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DIAGNOSTIC_COLLECTION_NAME = void 0;
 exports.updateDiagnostics = updateDiagnostics;
 exports.clearDiagnostics = clearDiagnostics;
 const vscode = require("vscode");
-/** Name of the diagnostic collection used by Antigravity. */
-exports.DIAGNOSTIC_COLLECTION_NAME = 'antigravity';
-/**
- * Map a secret severity to the corresponding VS Code diagnostic severity.
- */
+exports.DIAGNOSTIC_COLLECTION_NAME = 'hatai';
 function mapSeverity(severity) {
     switch (severity) {
         case 'critical':
@@ -23,13 +15,6 @@ function mapSeverity(severity) {
             return vscode.DiagnosticSeverity.Information;
     }
 }
-/**
- * Update the Problems panel with diagnostics for detected secrets.
- *
- * @param document    - The text document that was scanned.
- * @param matches     - Detected secrets.
- * @param collection  - The diagnostic collection to update.
- */
 function updateDiagnostics(document, matches, collection) {
     const diagnostics = [];
     for (const match of matches) {
@@ -41,17 +26,11 @@ function updateDiagnostics(document, matches, collection) {
             `(entropy: ${entropyLabel}). Redact before sharing.`;
         const diagnostic = new vscode.Diagnostic(range, message, mapSeverity(match.severity));
         diagnostic.code = match.patternId;
-        diagnostic.source = 'Antigravity';
+        diagnostic.source = 'Hatai';
         diagnostics.push(diagnostic);
     }
     collection.set(document.uri, diagnostics);
 }
-/**
- * Clear diagnostics for a specific document.
- *
- * @param document   - The document to clear.
- * @param collection - The diagnostic collection.
- */
 function clearDiagnostics(document, collection) {
     collection.delete(document.uri);
 }

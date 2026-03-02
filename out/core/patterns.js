@@ -1,16 +1,7 @@
 "use strict";
-/**
- * @module core/patterns
- * Built-in and custom secret pattern definitions for the Antigravity detection engine.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BuiltInPatterns = void 0;
-/**
- * Built-in patterns covering the most common secret types.
- * All patterns use the global and case-insensitive flags where appropriate.
- */
 exports.BuiltInPatterns = [
-    // --- Critical: Cloud provider keys & private keys ---
     {
         id: 'aws_access_key',
         type: 'aws_access_key',
@@ -32,7 +23,6 @@ exports.BuiltInPatterns = [
         severity: 'critical',
         description: 'Stripe Secret Key (live)',
     },
-    // --- High: API tokens with known prefixes ---
     {
         id: 'openai_api_key',
         type: 'openai_api_key',
@@ -82,7 +72,6 @@ exports.BuiltInPatterns = [
         severity: 'high',
         description: 'Google API Key',
     },
-    // --- Medium: Generic / format-based tokens ---
     {
         id: 'bearer_token',
         type: 'bearer_token',

@@ -1,15 +1,9 @@
-/**
- * @module config/policyLoader
- * Reads and watches the `.antigravity.json` team policy file from the workspace root.
- */
-
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PatternDefinition, PatternSeverity } from '../core/patterns';
 import { RedactStrategy } from '../core/redactor';
 
-/** Shape of the `.antigravity.json` team policy file. */
 export interface TeamPolicy {
     version?: string;
     teamName?: string;
@@ -19,7 +13,6 @@ export interface TeamPolicy {
     ignoredFiles?: string[];
 }
 
-/** A single custom pattern defined in the policy file. */
 interface PolicyPatternEntry {
     id: string;
     type: string;
@@ -28,18 +21,13 @@ interface PolicyPatternEntry {
     description: string;
 }
 
-/**
- * Load the team policy file from the workspace root.
- *
- * @returns The parsed policy, or `undefined` if no file exists.
- */
 export function loadPolicy(): TeamPolicy | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
         return undefined;
     }
 
-    const policyPath = path.join(workspaceFolders[0].uri.fsPath, '.antigravity.json');
+    const policyPath = path.join(workspaceFolders[0].uri.fsPath, '.hatai.json');
     if (!fs.existsSync(policyPath)) {
         return undefined;
     }
@@ -50,15 +38,12 @@ export function loadPolicy(): TeamPolicy | undefined {
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         vscode.window.showWarningMessage(
-            `Antigravity: Failed to parse .antigravity.json — ${message}`,
+            `Hatai: Failed to parse .hatai.json — ${message}`,
         );
         return undefined;
     }
 }
 
-/**
- * Convert policy custom patterns to `PatternDefinition[]` consumable by the detector.
- */
 export function policyPatternsToDefinitions(policy: TeamPolicy): PatternDefinition[] {
     if (!policy.customPatterns) {
         return [];
@@ -73,16 +58,10 @@ export function policyPatternsToDefinitions(policy: TeamPolicy): PatternDefiniti
     }));
 }
 
-/**
- * Watch the `.antigravity.json` file for changes and invoke a callback on reload.
- *
- * @param onReload - Callback invoked with the newly loaded policy (or `undefined`).
- * @returns A disposable that stops watching.
- */
 export function watchPolicyFile(
     onReload: (policy: TeamPolicy | undefined) => void,
 ): vscode.Disposable {
-    const watcher = vscode.workspace.createFileSystemWatcher('**/.antigravity.json');
+    const watcher = vscode.workspace.createFileSystemWatcher('**/.hatai.json');
 
     const reload = () => onReload(loadPolicy());
 

@@ -1,18 +1,12 @@
-/**
- * @module commands/installGitHook
- * One-click git pre-commit hook installer.
- */
-
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-/** Shell script template for the pre-commit hook. */
 const PRE_COMMIT_SCRIPT = `#!/bin/sh
-# ── Antigravity Pre-Commit Hook ──
+# ── Hatai Pre-Commit Hook ──
 # Scans staged files for secrets before allowing the commit.
 
-echo "🔒 Antigravity: Scanning staged files for secrets..."
+echo "🔒 Hatai: Scanning staged files for secrets..."
 
 # Get list of staged files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
@@ -49,29 +43,23 @@ done
 
 if [ $SECRETS_FOUND -gt 0 ]; then
     echo ""
-    echo "❌ Antigravity: $SECRETS_FOUND file(s) contain potential secrets."
+    echo "❌ Hatai: $SECRETS_FOUND file(s) contain potential secrets."
     echo "   Please redact them before committing."
     echo "   To bypass this check: git commit --no-verify"
     exit 1
 fi
 
-echo "✅ Antigravity: No secrets detected. Commit allowed."
+echo "✅ Hatai: No secrets detected. Commit allowed."
 exit 0
 `;
 
-/**
- * Register the `antigravity.installGitHook` command.
- *
- * Detects the workspace `.git` directory, writes a pre-commit hook script,
- * and shows a success/failure notification.
- */
 export function registerInstallGitHookCommand(
     context: vscode.ExtensionContext,
 ): vscode.Disposable {
-    return vscode.commands.registerCommand('antigravity.installGitHook', async () => {
+    return vscode.commands.registerCommand('hatai.installGitHook', async () => {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders || workspaceFolders.length === 0) {
-            vscode.window.showErrorMessage('Antigravity: No workspace folder open.');
+            vscode.window.showErrorMessage('Hatai: No workspace folder open.');
             return;
         }
 
@@ -80,7 +68,7 @@ export function registerInstallGitHookCommand(
 
         if (!fs.existsSync(gitDir)) {
             vscode.window.showErrorMessage(
-                'Antigravity: No .git directory found. Initialize a git repository first.',
+                'Hatai: No .git directory found. Initialize a git repository first.',
             );
             return;
         }
@@ -88,10 +76,9 @@ export function registerInstallGitHookCommand(
         const hooksDir = path.join(gitDir, 'hooks');
         const hookPath = path.join(hooksDir, 'pre-commit');
 
-        // Check for existing hook.
         if (fs.existsSync(hookPath)) {
             const overwrite = await vscode.window.showWarningMessage(
-                'Antigravity: A pre-commit hook already exists. Overwrite?',
+                'Hatai: A pre-commit hook already exists. Overwrite?',
                 'Overwrite',
                 'Cancel',
             );
@@ -101,7 +88,6 @@ export function registerInstallGitHookCommand(
         }
 
         try {
-            // Ensure hooks directory exists.
             if (!fs.existsSync(hooksDir)) {
                 fs.mkdirSync(hooksDir, { recursive: true });
             }
@@ -109,12 +95,12 @@ export function registerInstallGitHookCommand(
             fs.writeFileSync(hookPath, PRE_COMMIT_SCRIPT, { mode: 0o755 });
 
             vscode.window.showInformationMessage(
-                'Antigravity: ✅ Git pre-commit hook installed successfully!',
+                'Hatai: ✅ Git pre-commit hook installed successfully!',
             );
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
             vscode.window.showErrorMessage(
-                `Antigravity: Failed to install hook — ${message}`,
+                `Hatai: Failed to install hook — ${message}`,
             );
         }
     });

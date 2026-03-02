@@ -1,0 +1,50 @@
+<dashboard>
+  <header>
+    <title>Hatai</title>
+    <subtitle>Secrets Security Dashboard</subtitle>
+  </header>
+
+  <section id="secure-copy">
+    <card>
+      <card-title>Secure Copy Protection</card-title>
+      <toggle id="secureCopyToggle" default="true"/>
+      <description>
+        When enabled, secrets are replaced with placeholders before copying.
+      </description>
+    </card>
+  </section>
+
+  <section id="stats">
+    <grid columns="2">
+
+      <card variant="dark">
+        <card-title>Secrets Detected</card-title>
+        <metric id="totalSecrets">0</metric>
+      </card>
+
+      <card variant="green">
+        <card-title>Protected Copies</card-title>
+        <metric id="protectedCopies">0</metric>
+      </card>
+
+      <card variant="purple">
+        <card-title>Entropy Average</card-title>
+        <metric id="avgEntropy">0.0</metric>
+      </card>
+
+      <card variant="light">
+        <card-title>Last Scan</card-title>
+        <metric id="lastScanTime">Never</metric>
+      </card>
+
+    </grid>
+  </section>
+
+  <section id="recent">
+    <card>
+      <card-title>Recent Activity</card-title>
+      <timeline id="activityTimeline"/>
+    </card>
+  </section>
+
+</dashboard>

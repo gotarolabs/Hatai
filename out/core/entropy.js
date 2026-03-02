@@ -1,23 +1,7 @@
 "use strict";
-/**
- * @module core/entropy
- * Shannon entropy scoring for identifying high-randomness strings
- * that may be generated secrets or tokens.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateEntropy = calculateEntropy;
 exports.isHighEntropy = isHighEntropy;
-/**
- * Calculate the Shannon entropy of a string.
- *
- * Entropy measures the randomness / unpredictability of the characters.
- * Higher values indicate more random strings (likely generated tokens).
- *
- * Formula: H = -Σ p(x) * log2(p(x))
- *
- * @param value - The string to evaluate.
- * @returns The Shannon entropy value (bits per character).
- */
 function calculateEntropy(value) {
     if (value.length === 0) {
         return 0;
@@ -36,13 +20,6 @@ function calculateEntropy(value) {
     }
     return entropy;
 }
-/**
- * Determine whether a string has high entropy (likely a generated secret).
- *
- * @param value     - The string to evaluate.
- * @param threshold - Minimum entropy to be considered "high". Defaults to 3.5.
- * @returns `true` if the entropy exceeds the threshold.
- */
 function isHighEntropy(value, threshold = 3.5) {
     return calculateEntropy(value) >= threshold;
 }

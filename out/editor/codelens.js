@@ -1,30 +1,17 @@
 "use strict";
-/**
- * @module editor/codelens
- * CodeLens actions displayed above lines containing detected secrets.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AntigravityCodeLensProvider = void 0;
+exports.HataiCodeLensProvider = void 0;
 const vscode = require("vscode");
-/**
- * Provides CodeLens items (Redact / Mark as Safe / Copy Redacted) above secret lines.
- */
-class AntigravityCodeLensProvider {
+class HataiCodeLensProvider {
     constructor() {
         this.matchesByUri = new Map();
         this._onDidChangeCodeLenses = new vscode.EventEmitter();
         this.onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
     }
-    /**
-     * Update the stored matches for a document and refresh CodeLenses.
-     */
     updateMatches(uri, matches) {
         this.matchesByUri.set(uri.toString(), matches);
         this._onDidChangeCodeLenses.fire();
     }
-    /**
-     * Clear stored matches for a document.
-     */
     clearMatches(uri) {
         this.matchesByUri.delete(uri.toString());
         this._onDidChangeCodeLenses.fire();
@@ -34,7 +21,6 @@ class AntigravityCodeLensProvider {
         if (!matches || matches.length === 0) {
             return [];
         }
-        // Group matches by line to avoid duplicate CodeLenses on the same line.
         const lineMap = new Map();
         for (const match of matches) {
             const line = document.positionAt(match.start).line;
@@ -48,24 +34,21 @@ class AntigravityCodeLensProvider {
             const firstMatch = lineMatches[0];
             const count = lineMatches.length;
             const label = count > 1 ? `${count} secrets` : firstMatch.type;
-            // Redact action
             lenses.push(new vscode.CodeLens(range, {
                 title: `🔒 Redact (${label})`,
-                command: 'antigravity.redactLine',
+                command: 'hatai.redactLine',
                 arguments: [document.uri, line],
                 tooltip: 'Replace secret(s) on this line with redacted placeholders',
             }));
-            // Mark as Safe action
             lenses.push(new vscode.CodeLens(range, {
                 title: 'Mark as Safe',
-                command: 'antigravity.markSafe',
+                command: 'hatai.markSafe',
                 arguments: [firstMatch.value],
                 tooltip: 'Add this value to the whitelist (hashed — the raw value is never stored)',
             }));
-            // Copy Redacted action
             lenses.push(new vscode.CodeLens(range, {
                 title: 'Copy Redacted',
-                command: 'antigravity.copyRedactedLine',
+                command: 'hatai.copyRedactedLine',
                 arguments: [document.uri, line],
                 tooltip: 'Copy this line with secrets replaced to clipboard',
             }));
@@ -73,5 +56,5 @@ class AntigravityCodeLensProvider {
         return lenses;
     }
 }
-exports.AntigravityCodeLensProvider = AntigravityCodeLensProvider;
+exports.HataiCodeLensProvider = HataiCodeLensProvider;
 //# sourceMappingURL=codelens.js.map

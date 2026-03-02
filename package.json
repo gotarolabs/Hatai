@@ -1,10 +1,13 @@
 {
   "name": "Hatai",
-  "displayName": "Antigravity",
+  "displayName": "Hatai",
   "description": "Real-time secret detection and AI-safe redaction for VS Code. Protect your credentials before they leave your machine.",
   "version": "1.0.0",
-  "publisher": "Antigravity",
-  "icon": "images/icon.png",
+  "publisher": "Hatai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Im-gowtham-cd/Hatai"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -24,94 +27,121 @@
     "pre-commit"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:hatai.dashboard"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hatai",
+          "title": "Hatai",
+          "icon": "media/hatai-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "hatai": [
+        {
+          "type": "webview",
+          "id": "hatai.dashboard",
+          "name": "Dashboard"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "hataiAuditLog",
+          "name": "Hatai: Audit Log",
+          "icon": "$(shield)",
+          "contextualTitle": "Hatai"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "antigravity.scanFile",
-        "title": "Antigravity: Scan File for Secrets",
+        "command": "hatai.scanFile",
+        "title": "Hatai: Scan File for Secrets",
         "icon": "$(search)"
       },
       {
-        "command": "antigravity.copyForAI",
-        "title": "Antigravity: Copy for AI (Redacted)",
+        "command": "hatai.copyForAI",
+        "title": "Hatai: Copy for AI (Redacted)",
         "icon": "$(clippy)"
       },
       {
-        "command": "antigravity.buildContext",
-        "title": "Antigravity: Build AI Context (Multi-File)",
+        "command": "hatai.copySafe",
+        "title": "Hatai: Copy Safely (Policy-Enforced)",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "hatai.buildContext",
+        "title": "Hatai: Build AI Context (Multi-File)",
         "icon": "$(files)"
       },
       {
-        "command": "antigravity.installGitHook",
-        "title": "Antigravity: Install Git Pre-Commit Hook",
+        "command": "hatai.installGitHook",
+        "title": "Hatai: Install Git Pre-Commit Hook",
         "icon": "$(git-commit)"
       },
       {
-        "command": "antigravity.showStats",
-        "title": "Antigravity: Show Stats Dashboard",
+        "command": "hatai.showStats",
+        "title": "Hatai: Show Stats Dashboard",
         "icon": "$(graph)"
       },
       {
-        "command": "antigravity.clearAuditLog",
-        "title": "Antigravity: Clear Audit Log",
+        "command": "hatai.clearAuditLog",
+        "title": "Hatai: Clear Audit Log",
         "icon": "$(clear-all)"
       },
       {
-        "command": "antigravity.markSafe",
-        "title": "Antigravity: Mark as Safe"
+        "command": "hatai.markSafe",
+        "title": "Hatai: Mark as Safe"
       },
       {
-        "command": "antigravity.redactLine",
-        "title": "Antigravity: Redact Secrets on Line"
+        "command": "hatai.redactLine",
+        "title": "Hatai: Redact Secrets on Line"
       },
       {
-        "command": "antigravity.copyRedactedLine",
-        "title": "Antigravity: Copy Redacted Line"
+        "command": "hatai.copyRedactedLine",
+        "title": "Hatai: Copy Redacted Line"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "antigravity.copyForAI",
+          "command": "hatai.copyForAI",
           "group": "9_cutcopypaste@100",
           "when": "editorTextFocus"
         },
         {
-          "command": "antigravity.scanFile",
-          "group": "antigravity@1",
+          "command": "hatai.copySafe",
+          "group": "9_cutcopypaste@101",
           "when": "editorTextFocus"
         },
         {
-          "command": "antigravity.buildContext",
-          "group": "antigravity@2",
+          "command": "hatai.scanFile",
+          "group": "hatai@1",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "hatai.buildContext",
+          "group": "hatai@2",
           "when": "editorTextFocus"
         }
       ],
       "view/title": [
         {
-          "command": "antigravity.clearAuditLog",
-          "when": "view == antigravityAuditLog",
+          "command": "hatai.clearAuditLog",
+          "when": "view == hataiAuditLog",
           "group": "navigation"
         }
       ]
     },
-    "views": {
-      "explorer": [
-        {
-          "id": "antigravityAuditLog",
-          "name": "Antigravity: Audit Log",
-          "icon": "$(shield)",
-          "contextualTitle": "Antigravity"
-        }
-      ]
-    },
     "configuration": {
-      "title": "Antigravity",
+      "title": "Hatai",
       "properties": {
-        "antigravity.redactStrategy": {
+        "hatai.redactStrategy": {
           "type": "string",
           "enum": [
             "full",
@@ -121,27 +151,37 @@
           "default": "placeholder",
           "markdownDescription": "Redaction strategy: `full` (***REDACTED***), `partial` (sk****ef), or `placeholder` ({{API_KEY}})."
         },
-        "antigravity.enableRealTimeScanning": {
+        "hatai.enableRealTimeScanning": {
           "type": "boolean",
           "default": true,
           "description": "Enable real-time secret scanning as you type (debounced 500ms)."
         },
-        "antigravity.scanOnSave": {
+        "hatai.scanOnSave": {
           "type": "boolean",
           "default": true,
           "description": "Automatically scan for secrets when a file is saved."
         },
-        "antigravity.entropyThreshold": {
+        "hatai.allowAIReadSecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "If false, copy for AI will always redact secrets."
+        },
+        "hatai.allowUserCopySecrets": {
+          "type": "boolean",
+          "default": false,
+          "description": "If false, copy safely will redact secrets into dummy values."
+        },
+        "hatai.entropyThreshold": {
           "type": "number",
           "default": 3.5,
           "description": "Minimum Shannon entropy to flag a high-randomness string as a potential secret."
         },
-        "antigravity.showGutterIcons": {
+        "hatai.showGutterIcons": {
           "type": "boolean",
           "default": true,
           "description": "Show colored severity indicators next to detected secrets in the gutter."
         },
-        "antigravity.ignoredPatternIds": {
+        "hatai.ignoredPatternIds": {
           "type": "array",
           "items": {
             "type": "string"

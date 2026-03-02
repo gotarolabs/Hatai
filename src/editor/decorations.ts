@@ -1,12 +1,6 @@
-/**
- * @module editor/decorations
- * Severity-based inline decorations and gutter icons for detected secrets.
- */
-
 import * as vscode from 'vscode';
 import { SecretMatch } from '../core/detector';
 
-/** Decoration type for critical-severity secrets (red). */
 const criticalDecoration = vscode.window.createTextEditorDecorationType({
     gutterIconPath: new vscode.ThemeIcon('error').id ? undefined : undefined,
     gutterIconSize: 'contain',
@@ -21,7 +15,6 @@ const criticalDecoration = vscode.window.createTextEditorDecorationType({
     },
 });
 
-/** Decoration type for high-severity secrets (orange). */
 const highDecoration = vscode.window.createTextEditorDecorationType({
     overviewRulerColor: '#ff9100',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
@@ -34,7 +27,6 @@ const highDecoration = vscode.window.createTextEditorDecorationType({
     },
 });
 
-/** Decoration type for medium-severity secrets (yellow). */
 const mediumDecoration = vscode.window.createTextEditorDecorationType({
     overviewRulerColor: '#ffd600',
     overviewRulerLane: vscode.OverviewRulerLane.Right,
@@ -47,15 +39,8 @@ const mediumDecoration = vscode.window.createTextEditorDecorationType({
     },
 });
 
-/** All decoration types used by Antigravity — needed for disposal. */
 export const allDecorationTypes = [criticalDecoration, highDecoration, mediumDecoration];
 
-/**
- * Apply severity-based decorations to the editor for each detected secret.
- *
- * @param editor  - The active text editor.
- * @param matches - Detected secrets.
- */
 export function applyDecorations(editor: vscode.TextEditor, matches: SecretMatch[]): void {
     const critical: vscode.DecorationOptions[] = [];
     const high: vscode.DecorationOptions[] = [];
@@ -69,7 +54,7 @@ export function applyDecorations(editor: vscode.TextEditor, matches: SecretMatch
         const option: vscode.DecorationOptions = {
             range,
             hoverMessage: new vscode.MarkdownString(
-                `$(shield) **Antigravity** — ${match.severity.toUpperCase()} severity\n\n` +
+                `$(shield) **Hatai** — ${match.severity.toUpperCase()} severity\n\n` +
                 `Type: \`${match.type}\` · Entropy: \`${match.entropy.toFixed(2)}\``,
             ),
         };
@@ -92,11 +77,6 @@ export function applyDecorations(editor: vscode.TextEditor, matches: SecretMatch
     editor.setDecorations(mediumDecoration, medium);
 }
 
-/**
- * Clear all Antigravity decorations from the editor.
- *
- * @param editor - The active text editor.
- */
 export function clearDecorations(editor: vscode.TextEditor): void {
     editor.setDecorations(criticalDecoration, []);
     editor.setDecorations(highDecoration, []);

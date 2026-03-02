@@ -1,49 +1,34 @@
 "use strict";
-/**
- * @module extension
- * Antigravity VS Code Extension — Entry point.
- *
- * Registers all commands, providers, sidebar views, and real-time scanning
- * listeners. This is the single activation/deactivation entry point.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
-// Core
 const detector_1 = require("./core/detector");
 const redactor_1 = require("./core/redactor");
-// Editor
 const decorations_1 = require("./editor/decorations");
 const diagnostics_1 = require("./editor/diagnostics");
 const hoverProvider_1 = require("./editor/hoverProvider");
 const codelens_1 = require("./editor/codelens");
-// Commands
 const copyForAI_1 = require("./commands/copyForAI");
+const copySafe_1 = require("./commands/copySafe");
 const scanFile_1 = require("./commands/scanFile");
 const buildContext_1 = require("./commands/buildContext");
 const installGitHook_1 = require("./commands/installGitHook");
-// Sidebar
 const auditLogProvider_1 = require("./sidebar/auditLogProvider");
 const statsProvider_1 = require("./sidebar/statsProvider");
-// Config
+const dashboardProvider_1 = require("./sidebar/dashboardProvider");
 const settings_1 = require("./config/settings");
 const policyLoader_1 = require("./config/policyLoader");
 const whitelist_1 = require("./config/whitelist");
-// ─── State ────────────────────────────────────────────────────────────────
 let diagnosticCollection;
 let hoverProvider;
 let codeLensProvider;
 let auditLogProvider;
 let statsProvider;
+let dashboardProvider;
 let whitelistStore;
 let debounceTimer;
-/** Currently active detector config — rebuilt on settings / policy change. */
 let detectorConfig = {};
-// ─── Helpers ──────────────────────────────────────────────────────────────
-/**
- * Build a fresh DetectorConfig from current settings + policy.
- */
 function buildDetectorConfig(policy) {
     return {
         customPatterns: policy ? (0, policyLoader_1.policyPatternsToDefinitions)(policy) : [],
@@ -52,20 +37,13 @@ function buildDetectorConfig(policy) {
         ignoredPatternIds: (0, settings_1.getIgnoredPatternIds)(),
     };
 }
-/**
- * Run the detector on a document and update all UI surfaces.
- */
 function scanDocument(document) {
     const text = document.getText();
-    const matches = (0, detector_1.detectSecrets)(text, detectorConfig);
-    // Filter out whitelisted matches.
-    const filtered = matches.filter((m) => !whitelistStore.isWhitelisted(m.value));
-    // Diagnostics
+    const secrets = (0, detector_1.detectSecrets)(text, detectorConfig);
+    const filtered = secrets.filter((m) => !whitelistStore.isWhitelisted(m.value));
     (0, diagnostics_1.updateDiagnostics)(document, filtered, diagnosticCollection);
-    // Hover + CodeLens data
     hoverProvider.updateMatches(document.uri, filtered);
     codeLensProvider.updateMatches(document.uri, filtered);
-    // Decorations (only for the active editor)
     const editor = vscode.window.activeTextEditor;
     if (editor && editor.document.uri.toString() === document.uri.toString()) {
         if ((0, settings_1.showGutterIcons)()) {
@@ -76,108 +54,88 @@ function scanDocument(document) {
         }
     }
 }
-/**
- * Debounced wrapper for scanDocument.
- */
 function debouncedScan(document) {
     if (debounceTimer) {
         clearTimeout(debounceTimer);
     }
     debounceTimer = setTimeout(() => scanDocument(document), 500);
 }
-/**
- * Helper to push an audit entry and refresh stats.
- */
 function addAuditEntry(entry) {
     auditLogProvider.addEntry(entry);
     statsProvider.refresh();
+    dashboardProvider.pushStats();
+    dashboardProvider.pushTimeline();
 }
-// ─── Activation ───────────────────────────────────────────────────────────
 function activate(context) {
-    // ── Diagnostics ──
     diagnosticCollection = vscode.languages.createDiagnosticCollection(diagnostics_1.DIAGNOSTIC_COLLECTION_NAME);
     context.subscriptions.push(diagnosticCollection);
-    // ── Policy & config ──
     const policy = (0, policyLoader_1.loadPolicy)();
     detectorConfig = buildDetectorConfig(policy);
     const policyWatcher = (0, policyLoader_1.watchPolicyFile)((newPolicy) => {
         detectorConfig = buildDetectorConfig(newPolicy);
-        // Re-scan all visible editors.
         for (const editor of vscode.window.visibleTextEditors) {
             scanDocument(editor.document);
         }
     });
     context.subscriptions.push(policyWatcher);
-    // Re-build config when VS Code settings change.
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('antigravity')) {
+        if (e.affectsConfiguration('hatai')) {
             detectorConfig = buildDetectorConfig((0, policyLoader_1.loadPolicy)());
             for (const editor of vscode.window.visibleTextEditors) {
                 scanDocument(editor.document);
             }
+            statsProvider.refresh();
+            dashboardProvider.pushStats();
         }
     }));
-    // ── Whitelist ──
     whitelistStore = new whitelist_1.WhitelistStore(context.workspaceState);
-    // ── Hover provider ──
-    hoverProvider = new hoverProvider_1.AntigravityHoverProvider();
+    hoverProvider = new hoverProvider_1.HataiHoverProvider();
     context.subscriptions.push(vscode.languages.registerHoverProvider({ scheme: 'file' }, hoverProvider));
-    // ── CodeLens provider ──
-    codeLensProvider = new codelens_1.AntigravityCodeLensProvider();
+    codeLensProvider = new codelens_1.HataiCodeLensProvider();
     context.subscriptions.push(vscode.languages.registerCodeLensProvider({ scheme: 'file' }, codeLensProvider));
-    // ── Sidebar: Audit log ──
     auditLogProvider = new auditLogProvider_1.AuditLogProvider(context.workspaceState);
-    context.subscriptions.push(vscode.window.registerTreeDataProvider('antigravityAuditLog', auditLogProvider));
-    // ── Sidebar: Stats ──
+    context.subscriptions.push(vscode.window.registerTreeDataProvider('hataiAuditLog', auditLogProvider));
     statsProvider = new statsProvider_1.StatsProvider(() => auditLogProvider.getEntries());
-    // ── Real-time scanning ──
+    dashboardProvider = new dashboardProvider_1.DashboardProvider(context.extensionUri, context.workspaceState, () => auditLogProvider.getEntries());
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(dashboardProvider_1.DashboardProvider.viewType, dashboardProvider, { webviewOptions: { retainContextWhenHidden: true } }));
     context.subscriptions.push(vscode.workspace.onDidChangeTextDocument((e) => {
         if ((0, settings_1.isRealTimeScanningEnabled)() && e.document.uri.scheme === 'file') {
             debouncedScan(e.document);
         }
     }));
-    // ── Scan on save ──
     context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
         if ((0, settings_1.isScanOnSaveEnabled)() && doc.uri.scheme === 'file') {
             scanDocument(doc);
         }
     }));
-    // ── Scan on editor focus ──
     context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (editor && editor.document.uri.scheme === 'file') {
             scanDocument(editor.document);
         }
     }));
-    // ── Clean up closed documents ──
     context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((doc) => {
         diagnosticCollection.delete(doc.uri);
         hoverProvider.clearMatches(doc.uri);
         codeLensProvider.clearMatches(doc.uri);
     }));
-    // ─── Commands ─────────────────────────────────────────────────────────
-    // Copy for AI
     context.subscriptions.push((0, copyForAI_1.registerCopyForAICommand)(context, detectorConfig, addAuditEntry));
-    // Scan File
+    context.subscriptions.push((0, copySafe_1.registerCopySafeCommand)(context, detectorConfig, addAuditEntry));
     context.subscriptions.push((0, scanFile_1.registerScanFileCommand)(context, diagnosticCollection, detectorConfig, addAuditEntry));
-    // Build Context
     context.subscriptions.push((0, buildContext_1.registerBuildContextCommand)(context, detectorConfig, addAuditEntry));
-    // Install Git Hook
     context.subscriptions.push((0, installGitHook_1.registerInstallGitHookCommand)(context));
-    // Show Stats Dashboard
-    context.subscriptions.push(vscode.commands.registerCommand('antigravity.showStats', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('hatai.showStats', () => {
         statsProvider.show();
     }));
-    // Clear Audit Log
-    context.subscriptions.push(vscode.commands.registerCommand('antigravity.clearAuditLog', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('hatai.clearAuditLog', () => {
         auditLogProvider.clearLog();
         statsProvider.refresh();
-        vscode.window.showInformationMessage('Antigravity: Audit log cleared.');
+        dashboardProvider.pushStats();
+        dashboardProvider.pushTimeline();
+        vscode.window.showInformationMessage('Hatai: Audit log cleared.');
     }));
-    // Mark Safe (from CodeLens)
-    context.subscriptions.push(vscode.commands.registerCommand('antigravity.markSafe', (value) => {
+    context.subscriptions.push(vscode.commands.registerCommand('hatai.markSafe', (value) => {
         whitelistStore.addToWhitelist(value);
-        vscode.window.showInformationMessage('Antigravity: ✅ Value marked as safe.');
-        // Re-scan active editor to remove the decoration.
+        vscode.window.showInformationMessage('Hatai: ✅ Value marked as safe.');
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             scanDocument(editor.document);
@@ -189,8 +147,7 @@ function activate(context) {
             action: 'markSafe',
         });
     }));
-    // Redact Line (from CodeLens)
-    context.subscriptions.push(vscode.commands.registerCommand('antigravity.redactLine', async (uri, lineNumber) => {
+    context.subscriptions.push(vscode.commands.registerCommand('hatai.redactLine', async (uri, lineNumber) => {
         const doc = await vscode.workspace.openTextDocument(uri);
         const lineText = doc.lineAt(lineNumber).text;
         const matches = (0, detector_1.detectSecrets)(lineText, detectorConfig);
@@ -210,44 +167,38 @@ function activate(context) {
             action: 'redact',
         });
     }));
-    // Copy Redacted Line (from CodeLens)
-    context.subscriptions.push(vscode.commands.registerCommand('antigravity.copyRedactedLine', async (uri, lineNumber) => {
+    context.subscriptions.push(vscode.commands.registerCommand('hatai.copyRedactedLine', async (uri, lineNumber) => {
         const doc = await vscode.workspace.openTextDocument(uri);
         const lineText = doc.lineAt(lineNumber).text;
         const matches = (0, detector_1.detectSecrets)(lineText, detectorConfig);
         const redacted = (0, redactor_1.redact)(lineText, matches, 'placeholder');
         await vscode.env.clipboard.writeText(redacted);
-        vscode.window.showInformationMessage(`Antigravity: ✅ Redacted line copied (${matches.length} secret(s))`);
+        vscode.window.showInformationMessage(`Hatai: ✅ Redacted line copied (${matches.length} secret(s))`);
     }));
-    // ── Initial scan of all visible editors ──
     for (const editor of vscode.window.visibleTextEditors) {
         if (editor.document.uri.scheme === 'file') {
             scanDocument(editor.document);
         }
     }
-    // ── Welcome message on first install ──
-    const hasShownWelcome = context.globalState.get('antigravity.welcomeShown');
+    const hasShownWelcome = context.globalState.get('hatai.welcomeShown');
     if (!hasShownWelcome) {
         vscode.window
-            .showInformationMessage('🛡️ Antigravity activated! Your secrets are now protected.', 'Open Dashboard')
+            .showInformationMessage('🛡️ Hatai activated! Your secrets are now protected.', 'Open Dashboard')
             .then((choice) => {
             if (choice === 'Open Dashboard') {
-                statsProvider.show();
+                void vscode.commands.executeCommand('hatai.dashboard.focus');
             }
         });
-        void context.globalState.update('antigravity.welcomeShown', true);
+        void context.globalState.update('hatai.welcomeShown', true);
     }
 }
-// ─── Deactivation ─────────────────────────────────────────────────────────
 function deactivate() {
     if (debounceTimer) {
         clearTimeout(debounceTimer);
     }
-    // Clear all decorations from visible editors.
     for (const editor of vscode.window.visibleTextEditors) {
         (0, decorations_1.clearDecorations)(editor);
     }
-    // Dispose decoration types.
     for (const dt of decorations_1.allDecorationTypes) {
         dt.dispose();
     }

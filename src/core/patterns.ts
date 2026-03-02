@@ -1,31 +1,19 @@
-/**
- * @module core/patterns
- * Built-in and custom secret pattern definitions for the Antigravity detection engine.
- */
-
-/** Severity level for a detected secret pattern. */
 export type PatternSeverity = 'critical' | 'high' | 'medium';
 
-/** Definition of a single secret detection pattern. */
 export interface PatternDefinition {
-    /** Unique identifier for this pattern. */
+    
     id: string;
-    /** Human-readable type category (e.g. 'aws_access_key'). */
+    
     type: string;
-    /** Regular expression used to match the secret. */
+    
     pattern: RegExp;
-    /** Severity level of the detected secret. */
+    
     severity: PatternSeverity;
-    /** Description of what this pattern detects. */
+    
     description: string;
 }
 
-/**
- * Built-in patterns covering the most common secret types.
- * All patterns use the global and case-insensitive flags where appropriate.
- */
 export const BuiltInPatterns: PatternDefinition[] = [
-    // --- Critical: Cloud provider keys & private keys ---
     {
         id: 'aws_access_key',
         type: 'aws_access_key',
@@ -48,7 +36,6 @@ export const BuiltInPatterns: PatternDefinition[] = [
         description: 'Stripe Secret Key (live)',
     },
 
-    // --- High: API tokens with known prefixes ---
     {
         id: 'openai_api_key',
         type: 'openai_api_key',
@@ -99,7 +86,6 @@ export const BuiltInPatterns: PatternDefinition[] = [
         description: 'Google API Key',
     },
 
-    // --- Medium: Generic / format-based tokens ---
     {
         id: 'bearer_token',
         type: 'bearer_token',
